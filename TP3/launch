@@ -1,0 +1,7 @@
+#PBS -N time_test
+#PBS -l nodes=1:ppn=2
+#PBS -o sucess -e error
+echo Iniciando el programa
+time ./SistemasParalelos/TP3/9
+echo Fin del programa
+

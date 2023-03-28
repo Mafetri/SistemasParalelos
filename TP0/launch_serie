@@ -1,0 +1,6 @@
+##Este es un script de TORQUE
+#PBS -N mi_proyecto_1
+#PBS -l nodes=1:ppn=2
+echo Iniciando el programa
+./SistemasParalelos/TP0/serie
+echo Fin del programa
