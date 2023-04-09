@@ -1,0 +1,18 @@
+#PBS -N proyecto_JuliaOMP
+#PBS -l nodes=1:ppn=2
+
+height=240000
+width=2000
+
+listOfCores="1 $(seq 4 4 40)"
+
+echo Inicio del programa
+for cores in $listOfCores; do
+   echo Experimento con cores: $cores
+   export OMP_NUM_THREADS=$cores
+   salida=$(./SistemasParalelos/TP04/julia $height $width)
+   tiempo=$(echo "$salida" | grep -o '[0-9]*\.[0-9]* seconds' | awk '{print $1}')
+   echo "Tiempo: $tiempo"
+   echo -------------------------------
+done
+echo Fin del programa

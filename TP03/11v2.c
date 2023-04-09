@@ -48,7 +48,7 @@ int main() {
       __m512i res = _mm512_mask_blend_epi32(mascara, op1, op2);
       // Guarda el vector resultante en la posicion analizada
       _mm512_store_epi32((__m512i*)(v+i), res);
-   }
+   }  
 
    printf("v[0]=%11d, ", v[0]);
    printf("v[11]=%11d, ", v[11]);
