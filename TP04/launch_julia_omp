@@ -1,5 +1,5 @@
 #PBS -N proyecto_JuliaOMP
-#PBS -l nodes=1:ppn=2
+#PBS -l nodes=s001-n228:ppn=2
 
 height=240000
 width=2000
