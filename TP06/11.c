@@ -24,14 +24,14 @@ int main (void) {
     #pragma omp parallel reduction(+:cant) 
     {
         int id = omp_get_thread_num();
-        int time_start = clock();
+        double time_start = omp_get_wtime();
         
         #pragma omp for schedule(dynamic, 10) nowait
         for(i = start; i <= end; i++) {
             if(primo(i)) cant++;
         }
 
-        printf("%d termine despues de %ld ciclos de reloj \n", id, clock() - time_start);
+        printf("%d termine despues de %f segundos \n", id, omp_get_wtime() - time_start);
     }    
     printf("Total de primos: %d \n", cant);
 }
