@@ -1,0 +1,6 @@
+#PBS -N time_test
+#PBS -l nodes=1:ppn=2
+#PBS -o sucess -e error
+echo Iniciando el programa
+mpirun -np 2 ./SistemasParalelos/TP07/exe
+echo Fin del programa
