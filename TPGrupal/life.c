@@ -39,12 +39,12 @@ int main(int argc, char *argv[]) {
     }
 
     // Limits of the block to be computed
-    int size_my_rows = (rows / comm_size);
-    int start_my_rows = size_my_rows * rank;
+    int size_my_rows = rows/ (comm_size / 2);
+    int start_my_rows = (rank / 2) * size_my_rows;
     int end_my_rows = start_my_rows + size_my_rows;
-
-    int size_my_colms = (cols / comm_size);
-    int start_my_colms = size_my_colms * rank;
+    
+    int size_my_colms = cols / 2;
+    int start_my_colms = (rank % 2) * size_my_colms;
     int end_my_colms = start_my_colms + size_my_colms;
 
     //Se reserva memoria dinámica para la matriz de celdas, representada por el arreglo de punteros "old"	
@@ -55,14 +55,22 @@ int main(int argc, char *argv[]) {
     }
 
     //Inicializa elementos de la matriz "old" con 0 o 1 segun el patron de entrada 
-    i = 1;
+    i = 0;
     s = malloc(cols);
     res = fgets(s, cols, f);
 
+    // Se inicializa la matriz con ceros
+    for(int z = 0; z < size_my_rows; z++) {
+        for(int j = 0; j < size_my_colms; j++) {
+            old[z][j] = 0;
+        }
+    }
+
+    // Se llena la matriz con 0s o 1s segun corresponda
     while (i <= rows && res != NULL) {
         for (j = 0; j < strlen(s) - 1; j++) {
-            if(i >= start_my_rows && i <= end_my_rows && j >= start_my_colms && j <= end_my_colms) {
-                old[i%start_my_rows][j%start_my_colms] = (s[j] == '.') ? 0 : 1;
+            if(i >= start_my_rows && i < end_my_rows && j >= start_my_colms && j < end_my_colms) {
+                old[i-start_my_rows][j-start_my_colms] = (s[j] == '.') ? 0 : 1;
             }
         }
         res = fgets(s, cols, f);
@@ -72,11 +80,12 @@ int main(int argc, char *argv[]) {
     fclose(f); //Se cierra el archivo 
     free(s); //Se libera la memoria utilizada para recorrer el archivo
 
-    FILE *output;
-    output = fopen(rank, "w");
-    for(int k = 0; k < size_my_colms; k++) {
-        for(int l = 0; l < size_my_rows; l++) {
-            fprintf(output, old[k][l]);
+    char filename[50];
+    sprintf(filename, "subgrid_%d_%d.out", rank / 2, rank % 2);
+    FILE *output = fopen(filename, "w");
+    for(int k = 0; k < size_my_rows; k++) {
+        for(int l = 0; l < size_my_colms; l++) {
+            fprintf(output, "%d, ",old[k][l]);
         }
         fprintf(output, "\n");
     }
