@@ -6,7 +6,7 @@
 int main(int argc, char *argv[]) {
     FILE *f;
     char *s, *res;
-    int rows, cols, steps, n, i, j, ncols, nrows;
+    int rows, cols, steps, n, i, j;
 
     //Controla que se haya ingresado un argumento en la llamada (el archivo con el  patrón de entrada) 
     if (argc != 2) {
@@ -30,6 +30,7 @@ int main(int argc, char *argv[]) {
 
     MPI_Init (&argc, &argv);
     int rank, comm_size;
+    MPI_Comm grid;
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     MPI_Comm_size(MPI_COMM_WORLD, &comm_size);
 
@@ -38,15 +39,25 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
-    // Limits of the block to be computed
-    int size_my_rows = rows/ (comm_size / 2);
-    int start_my_rows = (rank / 2) * size_my_rows;
-    int end_my_rows = start_my_rows + size_my_rows;
-    
-    int size_my_colms = cols / 2;
-    int start_my_colms = (rank % 2) * size_my_colms;
-    int end_my_colms = start_my_colms + size_my_colms;
+    //Construction of grid
+    int dims[] = {(comm_size / 2), 2};
+    int ndims = 2;
+    int periods[] = {1, 1};
+    MPI_Cart_create(MPI_COMM_WORLD, ndims, dims, periods, 0, &grid);
 
+    // Coords of the process
+    int coords[2];
+    MPI_Cart_coords(grid, rank, ndims, coords);
+
+    // Limits of the block to be computed
+    int size_my_rows = rows / (comm_size / 2);
+    int start_my_rows = coords[0] * size_my_rows;
+    int end_my_rows = start_my_rows + size_my_rows;
+
+    int size_my_colms = cols / 2;
+    int start_my_colms = coords[1] * size_my_colms;
+    int end_my_colms = start_my_colms + size_my_colms;
+    
     //Se reserva memoria dinámica para la matriz de celdas, representada por el arreglo de punteros "old"	
     char **old;
     old = malloc(size_my_rows * sizeof (char*));
@@ -80,8 +91,75 @@ int main(int argc, char *argv[]) {
     fclose(f); //Se cierra el archivo 
     free(s); //Se libera la memoria utilizada para recorrer el archivo
 
+    int down_rank;
+    int up_rank;
+    int left_rank;
+    int right_rank;
+    MPI_Cart_shift(grid, 0, 1, &up_rank, &down_rank);
+    MPI_Cart_shift(grid, 1, 1, &left_rank, &right_rank);
+
+    MPI_Datatype column_type;
+    MPI_Type_vector(size_my_colms, 1, size_my_colms, MPI_INT, &column_type);
+    MPI_Type_commit(&column_type);
+
+    MPI_Request send_request;
+    MPI_Isend(&old[0][0], 1, column_type, left_rank, 0, grid, &send_request);
+    MPI_Isend(&old[0][(size_my_colms-1)], 1, column_type, right_rank, 0, grid, &send_request);
+
+    int left_column[size_my_colms];
+    int right_column[size_my_colms];
+    MPI_Request recv_request_left = MPI_REQUEST_NULL;
+    MPI_Request recv_request_right = MPI_REQUEST_NULL;
+    MPI_Irecv(left_column, 1, column_type, left_rank, MPI_ANY_TAG, grid, &recv_request_left);
+    MPI_Irecv(right_column, 1, column_type, right_rank, MPI_ANY_TAG, grid, &recv_request_right);
+
+    // Harias tu calculo interno
+    for(i = 1; i < size_my_rows - 1; i++) {
+        for(j = 1; j < size_my_colms - 1; j++){
+            // Tocas a next step
+        }
+    }
+
+    MPI_Status recv_status;
+    MPI_Wait(&recv_request_left, &recv_status);
+    MPI_Wait(&recv_request_right, &recv_status);
+
+    if(rank == 0) {
+        for(j = 0; j < size_my_colms; j++){
+            printf("%d, ", left_column[j]);
+        }
+        printf("\n");
+        for(j = 0; j < size_my_colms; j++){
+            printf("%d, ", right_column[j]);
+        }
+    }
+
+
+    // Esperas recibir las columnas
+
+
+    // Envias la fila superior e inferior
+    // Calculas tus costados (derecha e izquierda)
+    // Esperas recibir las filas superiores e inferiores
+    // Calculas tus filas superiores e inferiores
+    
+    // Reinicias el ciclo
+
+    /*
+    for (j = 0; j < MATRIX_SIZE; j++) {
+		MPI_Recv(&matrix[0][j], 1, column_type, 0, MPI_ANY_TAG, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+    }
+    // WAIT
+    // Calculas con respesto a lo recivido
+
+    MPI_Datatype row;
+    MPI_Type_commit(&row);
+
+    MPI_Type_vector(size_my_colms + 2, 1, 0, MPI_Datatype old_type, MPI_Datatype *newtype)
+
+
     char filename[50];
-    sprintf(filename, "subgrid_%d_%d.out", rank / 2, rank % 2);
+    sprintf(filename, "subgrid_%d_%d.out", coords[0], coords[1]);
     FILE *output = fopen(filename, "w");
     for(int k = 0; k < size_my_rows; k++) {
         for(int l = 0; l < size_my_colms; l++) {
@@ -90,6 +168,8 @@ int main(int argc, char *argv[]) {
         fprintf(output, "\n");
     }
     fprintf(output, "\n");
+    */
+    
 
     /*
     //Copias para hacer el mundo toroidal
