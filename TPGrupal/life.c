@@ -99,19 +99,24 @@ int main(int argc, char *argv[]) {
     MPI_Cart_shift(grid, 1, 1, &left_rank, &right_rank);
 
     MPI_Datatype column_type;
-    MPI_Type_vector(size_my_colms, 1, size_my_colms, MPI_INT, &column_type);
+    MPI_Type_vector(size_my_rows, 1, 1, MPI_CHAR, &column_type);
     MPI_Type_commit(&column_type);
 
     MPI_Request send_request;
     MPI_Isend(&old[0][0], 1, column_type, left_rank, 0, grid, &send_request);
-    MPI_Isend(&old[0][(size_my_colms-1)], 1, column_type, right_rank, 0, grid, &send_request);
+    MPI_Isend(&old[0][(size_my_colms-1)], 1, column_type, right_rank, 1, grid, &send_request);
 
-    int left_column[size_my_colms];
-    int right_column[size_my_colms];
+    char left_column[size_my_rows];
+    char right_column[size_my_rows];
+    for(j = 0; j < size_my_rows; j++){
+        left_column[j] = 0;
+        right_column[j] = 0;
+    }
+
     MPI_Request recv_request_left = MPI_REQUEST_NULL;
     MPI_Request recv_request_right = MPI_REQUEST_NULL;
-    MPI_Irecv(left_column, 1, column_type, left_rank, MPI_ANY_TAG, grid, &recv_request_left);
-    MPI_Irecv(right_column, 1, column_type, right_rank, MPI_ANY_TAG, grid, &recv_request_right);
+    MPI_Irecv(left_column, 1, column_type, left_rank, 1, grid, &recv_request_left);
+    MPI_Irecv(right_column, 1, column_type, right_rank, 0, grid, &recv_request_right);
 
     // Harias tu calculo interno
     for(i = 1; i < size_my_rows - 1; i++) {
@@ -120,22 +125,22 @@ int main(int argc, char *argv[]) {
         }
     }
 
+    // Esperas recibir las columnas
     MPI_Status recv_status;
     MPI_Wait(&recv_request_left, &recv_status);
-    MPI_Wait(&recv_request_right, &recv_status);
+    MPI_Status recv_status2;
+    MPI_Wait(&recv_request_right, &recv_status2);
 
-    if(rank == 0) {
-        for(j = 0; j < size_my_colms; j++){
-            printf("%d, ", left_column[j]);
-        }
-        printf("\n");
-        for(j = 0; j < size_my_colms; j++){
-            printf("%d, ", right_column[j]);
+    if(rank == 3) {
+        printf("%d rank: %d, recibi de %d y %d \n", size_my_colms, rank, left_rank, right_rank);
+        printf("L   R\n");
+        for(j = 0; j < size_my_rows; j++){
+            printf("%d    ", left_column[j]);
+            printf("%d \n", right_column[j]);
         }
     }
 
 
-    // Esperas recibir las columnas
 
 
     // Envias la fila superior e inferior

@@ -1,36 +1,21 @@
 
 ########################################################################
-#      Date:           Wed 31 May 2023 01:24:35 PM PDT
-#    Job ID:           2308081.v-qsvr-1.aidevcloud
+#      Date:           Thu 01 Jun 2023 12:44:43 PM PDT
+#    Job ID:           2308979.v-qsvr-1.aidevcloud
 #      User:           u188062
 # Resources:           cput=75:00:00,neednodes=1:ppn=2,nodes=1:ppn=2,walltime=06:00:00
 ########################################################################
 
 Iniciando el programa
-Prewait 0 
-Poswait 0 
-0, 0, -1061566016, 32767, 1337286000, 21997, 1337287735, 21997, 0, 32767, 
-0, 32767, -1946157051, 32669, 0, 0, -1061566256, 32767, 15, 0, Prewait 1 
-Poswait 1 
-Prewait 2 
-Poswait 2 
-Prewait 3 
-Poswait 3 
-Prewait 4 
-Poswait 4 
-Prewait 5 
-Poswait 5 
-Prewait 6 
-Poswait 6 
-Prewait 7 
-Poswait 7 
-Prewait 8 
-Poswait 8 
-Prewait 9 
-Poswait 9 
+10 rank: 3, recibi de 2 y 2 
+L   R
+0    0 
+0    0 
+0    0 
+0    0 
 
 ########################################################################
-# End of output for job 2308081.v-qsvr-1.aidevcloud
-# Date: Wed 31 May 2023 01:24:43 PM PDT
+# End of output for job 2308979.v-qsvr-1.aidevcloud
+# Date: Thu 01 Jun 2023 12:44:51 PM PDT
 ########################################################################
 
