@@ -57,12 +57,16 @@ int main(int argc, char *argv[]) {
     int size_my_colms = cols / 2;
     int start_my_colms = coords[1] * size_my_colms;
     int end_my_colms = start_my_colms + size_my_colms;
+
+    // Total matrix to save the neighbours columns and rows
+    int total_size_my_rows = size_my_rows + 2;
+    int total_size_my_colms = size_my_colms + 2;
     
     //Se reserva memoria dinámica para la matriz de celdas, representada por el arreglo de punteros "old"	
     char **old;
-    old = malloc(size_my_rows * sizeof (char*));
-    for (i = 0; i < size_my_rows; i++) {
-        old[i] = (char *) malloc(size_my_colms * sizeof (char));
+    old = malloc(total_size_my_rows * sizeof (char*));
+    for (i = 0; i < total_size_my_rows; i++) {
+        old[i] = (char *) malloc(total_size_my_colms * sizeof (char));
     }
 
     //Inicializa elementos de la matriz "old" con 0 o 1 segun el patron de entrada 
@@ -71,8 +75,8 @@ int main(int argc, char *argv[]) {
     res = fgets(s, cols, f);
 
     // Se inicializa la matriz con ceros
-    for(int z = 0; z < size_my_rows; z++) {
-        for(int j = 0; j < size_my_colms; j++) {
+    for(int z = 0; z < total_size_my_rows; z++) {
+        for(int j = 0; j < total_size_my_colms; j++) {
             old[z][j] = 0;
         }
     }
@@ -81,7 +85,7 @@ int main(int argc, char *argv[]) {
     while (i <= rows && res != NULL) {
         for (j = 0; j < strlen(s) - 1; j++) {
             if(i >= start_my_rows && i < end_my_rows && j >= start_my_colms && j < end_my_colms) {
-                old[i-start_my_rows][j-start_my_colms] = (s[j] == '.') ? 0 : 1;
+                old[(i-start_my_rows)+1][(j-start_my_colms)+1] = (s[j] == '.') ? 0 : 1;
             }
         }
         res = fgets(s, cols, f);
@@ -90,33 +94,22 @@ int main(int argc, char *argv[]) {
 
     fclose(f); //Se cierra el archivo 
     free(s); //Se libera la memoria utilizada para recorrer el archivo
-
-    int down_rank;
-    int up_rank;
+    
+    // Envias a la derecha e izquierda la columna correspondiente
     int left_rank;
     int right_rank;
-    MPI_Cart_shift(grid, 0, 1, &up_rank, &down_rank);
     MPI_Cart_shift(grid, 1, 1, &left_rank, &right_rank);
-
     MPI_Datatype column_type;
-    MPI_Type_vector(size_my_rows, 1, 1, MPI_CHAR, &column_type);
+    MPI_Type_vector(size_my_rows, 1, total_size_my_colms, MPI_CHAR, &column_type);
     MPI_Type_commit(&column_type);
-
     MPI_Request send_request;
-    MPI_Isend(&old[0][0], 1, column_type, left_rank, 0, grid, &send_request);
-    MPI_Isend(&old[0][(size_my_colms-1)], 1, column_type, right_rank, 1, grid, &send_request);
-
-    char left_column[size_my_rows];
-    char right_column[size_my_rows];
-    for(j = 0; j < size_my_rows; j++){
-        left_column[j] = 0;
-        right_column[j] = 0;
-    }
-
-    MPI_Request recv_request_left = MPI_REQUEST_NULL;
-    MPI_Request recv_request_right = MPI_REQUEST_NULL;
-    MPI_Irecv(left_column, 1, column_type, left_rank, 1, grid, &recv_request_left);
-    MPI_Irecv(right_column, 1, column_type, right_rank, 0, grid, &recv_request_right);
+    MPI_Request send_request2;
+    MPI_Request recv_request_left;
+    MPI_Request recv_request_right;
+    MPI_Isend(&old[1][1], 1, column_type, left_rank, 0, grid, &send_request);
+    MPI_Isend(&old[1][size_my_colms], 1, column_type, right_rank, 1, grid, &send_request2);    
+    MPI_Irecv(&old[1][total_size_my_colms-1], 1, column_type, right_rank, 0, grid, &recv_request_right);
+    MPI_Irecv(&old[1][0], 1, column_type, left_rank, 1, grid, &recv_request_left);
 
     // Harias tu calculo interno
     for(i = 1; i < size_my_rows - 1; i++) {
@@ -125,29 +118,88 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    // Esperas recibir las columnas
-    MPI_Status recv_status;
-    MPI_Wait(&recv_request_left, &recv_status);
-    MPI_Status recv_status2;
-    MPI_Wait(&recv_request_right, &recv_status2);
+    // Esperas recibir las columnas derecha e izquierda
+    MPI_Wait(&recv_request_left, MPI_STATUS_IGNORE);
+    MPI_Wait(&recv_request_right, MPI_STATUS_IGNORE);
 
-    if(rank == 3) {
-        printf("%d rank: %d, recibi de %d y %d \n", size_my_colms, rank, left_rank, right_rank);
-        printf("L   R\n");
-        for(j = 0; j < size_my_rows; j++){
-            printf("%d    ", left_column[j]);
-            printf("%d \n", right_column[j]);
+    // Envias las filas superiores e inferiores
+    int down_rank;
+    int up_rank;
+    MPI_Cart_shift(grid, 0, 1, &up_rank, &down_rank);
+    MPI_Datatype row_type;
+    MPI_Request recv_request_up = MPI_REQUEST_NULL;
+    MPI_Request recv_request_down = MPI_REQUEST_NULL;
+    MPI_Type_vector(total_size_my_colms, 1, 1, MPI_CHAR, &row_type);
+    MPI_Type_commit(&row_type);
+    MPI_Isend(&old[1][0], 1, row_type, up_rank, 0, grid, &send_request);
+    MPI_Isend(&old[size_my_rows][0], 1, row_type, down_rank, 1, grid, &send_request2);    
+    MPI_Irecv(&old[0][0], 1, row_type, up_rank, 1, grid, &recv_request_up);
+    MPI_Irecv(&old[size_my_rows+1][0], 1, row_type, down_rank, 0, grid, &recv_request_down);
+
+    // Calculas los de la derecha e izquierda
+
+    // Esperas recibir las filas superiores e inferiores
+    MPI_Wait(&recv_request_left, MPI_STATUS_IGNORE);
+    MPI_Wait(&recv_request_right, MPI_STATUS_IGNORE);
+
+    // Calculas las filas superiores e inferiores
+
+
+    // Finaliza el ciclo
+    
+    MPI_Barrier(MPI_COMM_WORLD);
+	for (int i = 0; i < comm_size; i++) {
+        if (rank == i) {
+            printf("Soy: %d, derecha: %d izquierda: %d \n", rank, right_rank, left_rank);
+            for(int k = 0; k < total_size_my_rows; k++) {
+                for(int l = 0; l < total_size_my_colms; l++) {
+                    printf("%d, ",old[k][l]);
+                }
+                printf("\n");
+            }
+            printf("\n");
         }
+        MPI_Barrier(MPI_COMM_WORLD);
     }
+    
+    
+    /*
+        char filename[50];
+        sprintf(filename, "subgrid3_%d_%d.out", coords[0], coords[1]);
+        FILE *output = fopen(filename, "w");
+        for(int k = 0; k < total_size_my_rows; k++) {
+            for(int l = 0; l < total_size_my_colms; l++) {
+                fprintf(output, "%d, ",old[k][l]);
+            }
+            fprintf(output, "\n");
+        }
+        fprintf(output, "\n");
+    */
 
+    /* Columnas con sendrecv
+    MPI_Wait(&recv_request_left, MPI_STATUS_IGNORE);
+    MPI_Sendrecv(&old[1][1], 1, column_type, left_rank, 0,
+                &old[1][total_size_my_colms - 1], 1, column_type, right_rank, 0,
+                grid, MPI_STATUS_IGNORE);
+    MPI_Sendrecv(&old[1][size_my_colms], 1, column_type, right_rank, 1,
+             &old[1][0], 1, column_type, left_rank, 1,
+             grid, MPI_STATUS_IGNORE);
+    */
 
+    /* Anterior forma de imprimir derecha e izquierda
+    printf("%d rank: %d, recibi de %d y %d \n", size_my_colms, rank, left_rank, right_rank);
+    printf("L   R\n");
+    for(j = 0; j < size_my_rows; j++){
+        printf("%d    ", left_column[j]);
+        printf("%d \n", right_column[j]);
+    }
+    */
 
 
     // Envias la fila superior e inferior
     // Calculas tus costados (derecha e izquierda)
     // Esperas recibir las filas superiores e inferiores
     // Calculas tus filas superiores e inferiores
-    
     // Reinicias el ciclo
 
     /*
@@ -163,16 +215,7 @@ int main(int argc, char *argv[]) {
     MPI_Type_vector(size_my_colms + 2, 1, 0, MPI_Datatype old_type, MPI_Datatype *newtype)
 
 
-    char filename[50];
-    sprintf(filename, "subgrid_%d_%d.out", coords[0], coords[1]);
-    FILE *output = fopen(filename, "w");
-    for(int k = 0; k < size_my_rows; k++) {
-        for(int l = 0; l < size_my_colms; l++) {
-            fprintf(output, "%d, ",old[k][l]);
-        }
-        fprintf(output, "\n");
-    }
-    fprintf(output, "\n");
+    
     */
     
 
