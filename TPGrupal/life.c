@@ -45,7 +45,7 @@ int main(int argc, char *argv[]) {
     MPI_Comm_size(MPI_COMM_WORLD, &comm_size);
 
     if(comm_size % 2 != 0) {
-        printf("pelotudo");
+        printf("Deben haber cantidad de procesos pares.");
         return 1;
     }
 
@@ -73,23 +73,22 @@ int main(int argc, char *argv[]) {
     int total_size_my_colms = size_my_colms + 2;
     
     //Se reserva memoria dinámica para la matriz de celdas, representada por el arreglo de punteros "old"	
-    char *old[total_size_my_rows];
+    char **old = malloc(total_size_my_rows * sizeof(char*));
     char *old_temp = malloc(total_size_my_rows * total_size_my_colms * sizeof(char));
     for (i = 0; i < total_size_my_rows; i++) {
         old[i] = &old_temp[i * total_size_my_colms];
     }
 
     //Inicializa elementos de la matriz "old" con 0 o 1 segun el patron de entrada 
-    i = 0;
     s = malloc(cols);
-    res = fgets(s, cols, f);
+    res = fgets(s, cols + 2, f);
 
-    // Se inicializa la matriz con ceros
-    for(int z = 0; z < total_size_my_rows; z++) {
-        for(int j = 0; j < total_size_my_colms; j++) {
-            old[z][j] = 0;
+    for(j = 0; j < total_size_my_rows; j++) {
+        for(i = 0; i < total_size_my_colms; i++){
+            old[j][i] = 0;
         }
     }
+    i = 0;
 
     // Se llena la matriz con 0s o 1s segun corresponda
     while (i <= rows && res != NULL) {
@@ -98,7 +97,7 @@ int main(int argc, char *argv[]) {
                 old[(i-start_my_rows)+1][(j-start_my_colms)+1] = (s[j] == '.') ? 0 : 1;
             }
         }
-        res = fgets(s, cols, f);
+        res = fgets(s, cols + 2, f);
         i++;
     };
 
@@ -106,22 +105,27 @@ int main(int argc, char *argv[]) {
     free(s); //Se libera la memoria utilizada para recorrer el archivo
     
     // Execution of the life game
-    char *nextStep[total_size_my_rows];
+    char **nextStep = malloc(total_size_my_rows * sizeof(char*));
     char *nextStep_temp = malloc(total_size_my_rows * total_size_my_colms * sizeof(char));
     for (i = 0; i < total_size_my_rows; i++) {
         nextStep[i] = &nextStep_temp[i * total_size_my_colms];
-        for(j=0; j < total_size_my_colms; j++){
-            nextStep[i][j] = 0;
-        }
     }
+
+    char **aux = malloc(total_size_my_rows * sizeof(char*));
 
     int c;
     int cant1;
+
+    // Variables Derivada
+    MPI_Cart_shift(grid, 1, 1, &left_rank, &right_rank);
+    MPI_Type_vector(size_my_rows, 1, total_size_my_colms, MPI_CHAR, &column_type);
+    MPI_Type_commit(&column_type);
+    MPI_Cart_shift(grid, 0, 1, &up_rank, &down_rank);
+    MPI_Type_vector(total_size_my_colms, 1, 1, MPI_CHAR, &row_type);
+    MPI_Type_commit(&row_type);
+
     for (c = 0; c < steps; c++){
         // Envias a la derecha e izquierda la columna correspondiente
-        MPI_Cart_shift(grid, 1, 1, &left_rank, &right_rank);
-        MPI_Type_vector(size_my_rows, 1, total_size_my_colms, MPI_CHAR, &column_type);
-        MPI_Type_commit(&column_type);
         MPI_Isend(&old[1][1], 1, column_type, left_rank, 0, grid, &send_request);
         MPI_Isend(&old[1][size_my_colms], 1, column_type, right_rank, 1, grid, &send_request2);    
         MPI_Irecv(&old[1][total_size_my_colms-1], 1, column_type, right_rank, 0, grid, &recv_request_right);
@@ -152,9 +156,6 @@ int main(int argc, char *argv[]) {
         MPI_Wait(&recv_request_right, MPI_STATUS_IGNORE);
 
         // Envias las filas superiores e inferiores
-        MPI_Cart_shift(grid, 0, 1, &up_rank, &down_rank);
-        MPI_Type_vector(total_size_my_colms, 1, 1, MPI_CHAR, &row_type);
-        MPI_Type_commit(&row_type);
         MPI_Isend(&old[1][0], 1, row_type, up_rank, 0, grid, &send_request);
         MPI_Isend(&old[size_my_rows][0], 1, row_type, down_rank, 1, grid, &send_request2);    
         MPI_Irecv(&old[0][0], 1, row_type, up_rank, 1, grid, &recv_request_up);
@@ -192,17 +193,6 @@ int main(int argc, char *argv[]) {
         MPI_Wait(&recv_request_up, MPI_STATUS_IGNORE);
         MPI_Wait(&recv_request_down, MPI_STATUS_IGNORE);
 
-        if(rank == 0 && c == 0){
-            printf("Soy: %d, arriba: %d abajo: %d \n", rank, up_rank, down_rank);
-            for(int k = 0; k < total_size_my_rows; k++) {
-                for(int l = 0; l < total_size_my_colms; l++) {
-                    printf("%d, ",old[k][l]);
-                }
-                printf("\n");
-            }
-            printf("\n");
-        }
-
         // Calculas las filas superiores e inferiores
         // Harias tu calculo desde [1][1] a [1][total_size_my_colms-3]
         // y de [total_size_my_rows-3][1] a [total_size_my_rows-3][total_size_my_colms-3]
@@ -232,12 +222,9 @@ int main(int argc, char *argv[]) {
             }
         }
 
-        // Guarda en old el next step
-        for(i = 0; i < total_size_my_rows; i++){
-            for(j = 0; j < total_size_my_colms; j++){
-                old[i][j] = nextStep[i][j];
-            }
-        }
+        aux = old;
+        old = nextStep;
+        nextStep = aux;        
     }
 
     char filename[50];
@@ -245,11 +232,10 @@ int main(int argc, char *argv[]) {
     FILE *output = fopen(filename, "w");
     for(int k = 1; k <= size_my_rows; k++) {
         for(int l = 1; l <= size_my_colms; l++) {
-            fprintf(output, "%d, ",old[k][l]);
+            fprintf(output, "%c",old[k][l] == 1 ? 'O' : '.');
         }
         fprintf(output, "\n");
     }
-    fprintf(output, "\n");
     
     MPI_Finalize();
     return 0;

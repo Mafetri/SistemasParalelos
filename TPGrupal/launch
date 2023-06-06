@@ -3,4 +3,5 @@
 #PBS -o sucess -e error
 echo Iniciando el programa
 mpirun -np 10 ./SistemasParalelos/TPGrupal/exe ./SistemasParalelos/TPGrupal/patron1.cells
+#./juntar.sh
 echo Fin del programa
