@@ -1,0 +1,8 @@
+#PBS -N nashe
+#PBS -l nodes=s001-n143:ppn=2
+#PBS -o sucess -e error
+echo Iniciando el programa
+mpicc ./SistemasParalelos/TPGrupal/life.c -o ./SistemasParalelos/TPGrupal/exe
+mpirun -np 12 ./SistemasParalelos/TPGrupal/exe ./SistemasParalelos/TPGrupal/patron1.cells
+# ./juntar.sh
+echo Fin del programa

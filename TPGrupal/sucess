@@ -1,0 +1,63 @@
+
+########################################################################
+#      Date:           Sun Jun 11 15:41:00 PDT 2023
+#    Job ID:           2317405.v-qsvr-1.aidevcloud
+#      User:           u188062
+# Resources:           cput=75:00:00,neednodes=s001-n143:ppn=2,nodes=s001-n143:ppn=2,walltime=06:00:00
+########################################################################
+
+Iniciando el programa
+Deben haber columnas y filas acordes a la cantidad de procesosDeben haber columnas y filas acordes a la cantidad de procesosDeben haber columnas y filas acordes a la cantidad de procesosDeben haber columnas y filas acordes a la cantidad de procesos
+===================================================================================
+=   BAD TERMINATION OF ONE OF YOUR APPLICATION PROCESSES
+=   RANK 0 PID 13479 RUNNING AT s001-n143
+=   KILLED BY SIGNAL: 9 (Killed)
+===================================================================================
+
+===================================================================================
+=   BAD TERMINATION OF ONE OF YOUR APPLICATION PROCESSES
+=   RANK 1 PID 13480 RUNNING AT s001-n143
+=   KILLED BY SIGNAL: 9 (Killed)
+===================================================================================
+
+===================================================================================
+=   BAD TERMINATION OF ONE OF YOUR APPLICATION PROCESSES
+=   RANK 2 PID 13481 RUNNING AT s001-n143
+=   KILLED BY SIGNAL: 9 (Killed)
+===================================================================================
+
+===================================================================================
+=   BAD TERMINATION OF ONE OF YOUR APPLICATION PROCESSES
+=   RANK 3 PID 13482 RUNNING AT s001-n143
+=   KILLED BY SIGNAL: 9 (Killed)
+===================================================================================
+
+===================================================================================
+=   BAD TERMINATION OF ONE OF YOUR APPLICATION PROCESSES
+=   RANK 6 PID 13485 RUNNING AT s001-n143
+=   KILLED BY SIGNAL: 9 (Killed)
+===================================================================================
+
+===================================================================================
+=   BAD TERMINATION OF ONE OF YOUR APPLICATION PROCESSES
+=   RANK 7 PID 13486 RUNNING AT s001-n143
+=   KILLED BY SIGNAL: 9 (Killed)
+===================================================================================
+
+===================================================================================
+=   BAD TERMINATION OF ONE OF YOUR APPLICATION PROCESSES
+=   RANK 8 PID 13487 RUNNING AT s001-n143
+=   KILLED BY SIGNAL: 9 (Killed)
+===================================================================================
+
+===================================================================================
+=   BAD TERMINATION OF ONE OF YOUR APPLICATION PROCESSES
+=   RANK 9 PID 13488 RUNNING AT s001-n143
+=   KILLED BY SIGNAL: 9 (Killed)
+===================================================================================
+
+########################################################################
+# End of output for job 2317405.v-qsvr-1.aidevcloud
+# Date: Sun Jun 11 15:41:20 PDT 2023
+########################################################################
+
